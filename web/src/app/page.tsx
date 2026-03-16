@@ -56,8 +56,8 @@ export default function Home() {
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Unit Selector */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-6">
-          <label className="block text-sm font-semibold text-gray-600 mb-2">Compare by unit:</label>
-          <UnitSelector value={unit} onChange={handleUnitChange} />
+          <label htmlFor="unit-selector" className="block text-sm font-semibold text-gray-600 mb-2">Compare by unit:</label>
+          <UnitSelector id="unit-selector" value={unit} onChange={handleUnitChange} />
         </div>
 
         {/* Product Cards Grid */}
