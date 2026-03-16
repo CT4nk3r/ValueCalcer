@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { ProductOption } from '../../shared/types';
-import { compareProducts, UNITS } from '../../shared/calculators';
+import { compareProducts } from '../../shared/calculators';
 import { colors, spacing, fontSize, borderRadius } from '../../shared/theme';
 import ProductCard from '../components/ProductCard';
 import UnitSelector from '../components/UnitSelector';
