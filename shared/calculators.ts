@@ -43,9 +43,30 @@ export function compareProducts(options: ProductOption[]): ComparisonResult[] {
   return results;
 }
 
+function getBaseUnitLabel(unitValue: string): string {
+  if (unitValue === 'cm_dia') {
+    return 'cm²';
+  }
+  const unit = UNITS.find(u => u.value === unitValue);
+  if (!unit) {
+    return unitValue;
+  }
+  switch (unit.type) {
+    case 'volume':
+      return 'ml';
+    case 'weight':
+      return 'g';
+    case 'length':
+      return 'cm';
+    case 'area':
+      return 'cm²';
+    default:
+      return unit.label ?? unitValue;
+  }
+}
+
 export function formatPricePerUnit(pricePerUnit: number, unitValue: string): string {
   if (!isFinite(pricePerUnit)) return '—';
-  const unit = UNITS.find(u => u.value === unitValue);
-  const baseLabel = unitValue === 'cm_dia' ? 'cm²' : (unit?.label ?? unitValue);
+  const baseLabel = getBaseUnitLabel(unitValue);
   return `€${pricePerUnit.toFixed(4)} / ${baseLabel}`;
 }
