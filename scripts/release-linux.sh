@@ -4,6 +4,6 @@ set -e
 echo "Building Linux release (Tauri)..."
 cd web
 npm run build
-cd src-tauri
-cargo tauri build
+npm run tauri:build
+cd ..
 echo "Linux release build complete."
