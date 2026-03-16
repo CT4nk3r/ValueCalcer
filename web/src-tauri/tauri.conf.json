@@ -19,7 +19,13 @@
       "active": true,
       "targets": "all",
       "identifier": "com.valuecalcer.app",
-      "icon": []
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/256x256.png",
+        "icons/icon.ico"
+      ]
     },
     "security": {
       "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'"
