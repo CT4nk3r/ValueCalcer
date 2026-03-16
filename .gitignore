@@ -8,7 +8,6 @@ web/.next/
 out/
 web/out/
 build/
-android/
 ios/
 
 # RN specific
