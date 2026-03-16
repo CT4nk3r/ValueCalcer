@@ -14,6 +14,6 @@ console.log(`Updated web/package.json to version ${version}`);
 // Update tauri.conf.json
 const tauriConfPath = path.join(__dirname, '..', 'web', 'src-tauri', 'tauri.conf.json');
 const tauriConf = JSON.parse(fs.readFileSync(tauriConfPath, 'utf-8'));
-tauriConf.package.version = version;
+tauriConf.version = version;
 fs.writeFileSync(tauriConfPath, JSON.stringify(tauriConf, null, 2) + '\n');
 console.log(`Updated tauri.conf.json to version ${version}`);
