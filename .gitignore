@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+web/node_modules/
+
+# Build artifacts
+.next/
+web/.next/
+out/
+web/out/
+build/
+android/
+ios/
+
+# RN specific
+*.keystore
+*.jks
+
+# Env files
+.env
+.env.local
+.env*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jest
+coverage/
+
+# TypeScript
+*.tsbuildinfo

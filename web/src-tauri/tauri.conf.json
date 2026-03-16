@@ -1,0 +1,35 @@
+{
+  "$schema": "../node_modules/tauri-apps/tauri/tooling/cli/schema.json",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:3000",
+    "distDir": "../out"
+  },
+  "package": {
+    "productName": "ValueCalcer",
+    "version": "1.0.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": { "all": false, "open": true }
+    },
+    "bundle": {
+      "active": true,
+      "targets": "all",
+      "identifier": "com.valuecalcer.app",
+      "icon": []
+    },
+    "security": { "csp": null },
+    "windows": [
+      {
+        "fullscreen": false,
+        "resizable": true,
+        "title": "ValueCalcer",
+        "width": 1024,
+        "height": 768
+      }
+    ]
+  }
+}
