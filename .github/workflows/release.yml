@@ -1,0 +1,307 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      deploy_web:
+        description: 'Deploy web app to Vercel'
+        type: boolean
+        default: true
+      build_tauri:
+        description: 'Build Tauri desktop apps'
+        type: boolean
+        default: true
+      build_android:
+        description: 'Build Android'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  deploy_web:
+    name: Deploy web app to Vercel
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || inputs.deploy_web
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm install
+
+      - name: Create Vercel project config
+        run: |
+          mkdir -p .vercel
+          echo '{"orgId":"${{ secrets.VERCEL_ORG_ID }}","projectId":"${{ secrets.VERCEL_PROJECT_ID }}"}' > .vercel/project.json
+
+      - name: Deploy to Vercel
+        run: npx vercel deploy --prod --yes --archive=tgz --token "$VERCEL_TOKEN"
+
+  build_tauri:
+    name: Build Tauri desktop apps
+    runs-on: ${{ matrix.os }}
+    if: github.event_name == 'push' || inputs.build_tauri
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Ubuntu build dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            build-essential
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm install
+
+      - name: Build Tauri app
+        working-directory: web
+        run: npm run tauri:build
+
+      - name: Collect Linux artifacts
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          mkdir -p dist
+          DEB_FILE="$(find web/src-tauri/target/release/bundle -type f -name '*.deb' | head -n 1)"
+          APPIMAGE_FILE="$(find web/src-tauri/target/release/bundle -type f -name '*.AppImage' | head -n 1)"
+          RPM_FILE="$(find web/src-tauri/target/release/bundle -type f -name '*.rpm' | head -n 1)"
+          test -n "$DEB_FILE"
+          test -n "$APPIMAGE_FILE"
+          test -n "$RPM_FILE"
+          cp "$DEB_FILE" "dist/ValueCalcer-${TAG}-linux.deb"
+          cp "$APPIMAGE_FILE" "dist/ValueCalcer-${TAG}-linux.AppImage"
+          cp "$RPM_FILE" "dist/ValueCalcer-${TAG}-linux.rpm"
+
+      - name: Collect Windows artifacts
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $msiFile = Get-ChildItem -Path "web/src-tauri/target/release/bundle" -Recurse -Filter *.msi | Select-Object -First 1
+          $exeFile = Get-ChildItem -Path "web/src-tauri/target/release/bundle" -Recurse -Filter *.exe |
+            Where-Object { $_.FullName -notmatch "updater" } |
+            Select-Object -First 1
+
+          if (-not $msiFile) { throw "MSI artifact not found." }
+          if (-not $exeFile) { throw "EXE artifact not found." }
+
+          Copy-Item $msiFile.FullName "dist/ValueCalcer-$env:TAG-windows.msi"
+          Copy-Item $exeFile.FullName "dist/ValueCalcer-$env:TAG-windows.exe"
+
+      - name: Collect macOS artifacts
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          mkdir -p dist
+          DMG_FILE="$(find web/src-tauri/target/release/bundle -type f -name '*.dmg' | head -n 1)"
+          test -n "$DMG_FILE"
+          cp "$DMG_FILE" "dist/ValueCalcer-${TAG}-macos.dmg"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-${{ matrix.os }}
+          path: dist/*
+
+  build_android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || inputs.build_android
+    env:
+      TAG: ${{ github.ref_name }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Decode keystore
+        shell: bash
+        run: |
+          mkdir -p android/app
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore
+
+      - name: Create gradle.properties
+        run: |
+          mkdir -p android
+          echo "android.useAndroidX=true" >> android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
+          echo "org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m" >> android/gradle.properties
+          echo "MYAPP_RELEASE_STORE_FILE=my-release-key.keystore" >> android/gradle.properties
+          echo "MYAPP_RELEASE_KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> android/gradle.properties
+          echo "MYAPP_RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> android/gradle.properties
+          echo "MYAPP_RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> android/gradle.properties
+
+      - name: Build Android release artifacts
+        run: |
+          if [ -x android/gradlew ]; then
+            cd android
+            chmod +x ./gradlew
+            ./gradlew assembleRelease bundleRelease
+          else
+            echo "No Android project detected (android/gradlew missing); skipping Android build."
+          fi
+
+      - name: Sign Android artifacts
+        shell: bash
+        run: |
+          mkdir -p dist
+
+          UNSIGNED_APK="$(find android/app/build/outputs/apk/release -type f -name '*.apk' | head -n 1 || true)"
+          UNSIGNED_AAB="$(find android/app/build/outputs/bundle/release -type f -name '*.aab' | head -n 1 || true)"
+
+          if [ -z "$UNSIGNED_APK" ] || [ -z "$UNSIGNED_AAB" ]; then
+            echo "No unsigned Android artifacts found; skipping signing."
+            exit 0
+          fi
+
+          BUILD_TOOLS_DIR="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          APKSIGNER="$BUILD_TOOLS_DIR/apksigner"
+          ZIPALIGN="$BUILD_TOOLS_DIR/zipalign"
+
+          "$ZIPALIGN" -f -p 4 "$UNSIGNED_APK" dist/aligned.apk
+          "$APKSIGNER" sign \
+            --ks android/app/my-release-key.keystore \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass pass:"$KEYSTORE_PASSWORD" \
+            --key-pass pass:"$KEY_PASSWORD" \
+            --out "dist/ValueCalcer-${TAG}-android.apk" \
+            dist/aligned.apk
+
+          jarsigner \
+            -keystore android/app/my-release-key.keystore \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "$KEY_PASSWORD" \
+            "$UNSIGNED_AAB" "$KEY_ALIAS"
+
+          cp "$UNSIGNED_AAB" "dist/ValueCalcer-${TAG}-android.aab"
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: |
+            dist/ValueCalcer-*-android.apk
+            dist/ValueCalcer-*-android.aab
+
+  create_release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'push' && !cancelled()
+    needs: [deploy_web, build_tauri, build_android]
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          cd release-assets
+          sha256sum ValueCalcer-* > checksums.txt
+
+      - name: Generate release body
+        shell: bash
+        working-directory: release-assets
+        run: |
+          {
+            echo "## Downloads"
+            echo
+            echo "| Platform | File |"
+            echo "| --- | --- |"
+
+            for f in ValueCalcer-*-android.*; do
+              [[ -f "$f" ]] && echo "| Android | [\`$f\`](https://github.com/${{ github.repository }}/releases/download/${TAG}/$f) |"
+            done
+
+            for f in ValueCalcer-*-linux.*; do
+              [[ -f "$f" ]] && echo "| Linux | [\`$f\`](https://github.com/${{ github.repository }}/releases/download/${TAG}/$f) |"
+            done
+
+            for f in ValueCalcer-*-windows.*; do
+              [[ -f "$f" ]] && echo "| Windows | [\`$f\`](https://github.com/${{ github.repository }}/releases/download/${TAG}/$f) |"
+            done
+
+            for f in ValueCalcer-*-macos.*; do
+              [[ -f "$f" ]] && echo "| macOS | [\`$f\`](https://github.com/${{ github.repository }}/releases/download/${TAG}/$f) |"
+            done
+
+            echo
+            echo "## SHA256 Checksums"
+            echo
+            echo '```text'
+            cat checksums.txt
+            echo '```'
+          } > RELEASE_BODY.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: ${{ env.TAG }}
+          body_path: release-assets/RELEASE_BODY.md
+          files: |
+            release-assets/ValueCalcer-*-android.apk
+            release-assets/ValueCalcer-*-android.aab
+            release-assets/ValueCalcer-*-linux.deb
+            release-assets/ValueCalcer-*-linux.rpm
+            release-assets/ValueCalcer-*-linux.AppImage
+            release-assets/ValueCalcer-*-windows.msi
+            release-assets/ValueCalcer-*-windows.exe
+            release-assets/ValueCalcer-*-macos.dmg
+            release-assets/checksums.txt

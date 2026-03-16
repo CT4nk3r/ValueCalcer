@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #3B82F6;
+  --color-background: #FFFFFF;
+  --color-surface: #F9FAFB;
+  --color-text: #111827;
+  --color-text-secondary: #6B7280;
+  --color-success: #10B981;
+  --color-success-light: #D1FAE5;
+  --color-border: #E5E7EB;
+  --color-error: #EF4444;
+}
+
+body {
+  background-color: #F3F4F6;
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
