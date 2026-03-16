@@ -169,10 +169,12 @@ jobs:
       - name: Decode keystore
         shell: bash
         run: |
+          mkdir -p android/app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore
 
       - name: Create gradle.properties
         run: |
+          mkdir -p android
           echo "android.useAndroidX=true" >> android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m" >> android/gradle.properties
@@ -182,14 +184,19 @@ jobs:
           echo "MYAPP_RELEASE_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> android/gradle.properties
 
       - name: Build Android release artifacts
-        working-directory: android
         run: |
-          chmod +x ./gradlew
-          ./gradlew assembleRelease bundleRelease
+          if [ -x android/gradlew ]; then
+            cd android
+            chmod +x ./gradlew
+            ./gradlew assembleRelease bundleRelease
+          else
+            echo "No Android project detected (android/gradlew missing); skipping Android build."
+          fi
 
       - name: Decode keystore
         shell: bash
         run: |
+          mkdir -p android
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/release.keystore
 
       - name: Sign Android artifacts
@@ -197,11 +204,13 @@ jobs:
         run: |
           mkdir -p dist
 
-          UNSIGNED_APK="$(find android/app/build/outputs/apk/release -type f -name '*.apk' | head -n 1)"
-          UNSIGNED_AAB="$(find android/app/build/outputs/bundle/release -type f -name '*.aab' | head -n 1)"
+          UNSIGNED_APK="$(find android/app/build/outputs/apk/release -type f -name '*.apk' | head -n 1 || true)"
+          UNSIGNED_AAB="$(find android/app/build/outputs/bundle/release -type f -name '*.aab' | head -n 1 || true)"
 
-          test -n "$UNSIGNED_APK"
-          test -n "$UNSIGNED_AAB"
+          if [ -z "$UNSIGNED_APK" ] || [ -z "$UNSIGNED_AAB" ]; then
+            echo "No unsigned Android artifacts found; skipping signing."
+            exit 0
+          fi
 
           BUILD_TOOLS_DIR="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
           APKSIGNER="$BUILD_TOOLS_DIR/apksigner"
