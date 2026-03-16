@@ -193,12 +193,6 @@ jobs:
             echo "No Android project detected (android/gradlew missing); skipping Android build."
           fi
 
-      - name: Decode keystore
-        shell: bash
-        run: |
-          mkdir -p android
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/release.keystore
-
       - name: Sign Android artifacts
         shell: bash
         run: |
@@ -218,7 +212,7 @@ jobs:
 
           "$ZIPALIGN" -f -p 4 "$UNSIGNED_APK" dist/aligned.apk
           "$APKSIGNER" sign \
-            --ks android/release.keystore \
+            --ks android/app/my-release-key.keystore \
             --ks-key-alias "$KEY_ALIAS" \
             --ks-pass pass:"$KEYSTORE_PASSWORD" \
             --key-pass pass:"$KEY_PASSWORD" \
@@ -226,7 +220,7 @@ jobs:
             dist/aligned.apk
 
           jarsigner \
-            -keystore android/release.keystore \
+            -keystore android/app/my-release-key.keystore \
             -storepass "$KEYSTORE_PASSWORD" \
             -keypass "$KEY_PASSWORD" \
             "$UNSIGNED_AAB" "$KEY_ALIAS"
