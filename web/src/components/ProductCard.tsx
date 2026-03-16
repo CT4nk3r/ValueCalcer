@@ -30,6 +30,7 @@ export default function ProductCard({ option, result, onUpdate, onRemove, canRem
           onClick={() => onRemove(option.id)}
           className="absolute top-3 right-3 text-gray-400 hover:text-red-500 font-bold text-lg leading-none"
           title="Remove"
+          aria-label={`Remove ${option.name}`}
         >
           ✕
         </button>

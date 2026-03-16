@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { ProductOption } from '../../../shared/types';
-import { compareProducts, formatPricePerUnit } from '../../../shared/calculators';
+import { compareProducts } from '../../../shared/calculators';
 import ProductCard from '../components/ProductCard';
 import UnitSelector from '../components/UnitSelector';
 import AddButton from '../components/AddButton';
