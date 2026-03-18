@@ -7,10 +7,11 @@ import {
   StyleSheet,
 } from 'react-native';
 import { ProductOption } from '../../shared/types';
-import { compareProducts } from '../../shared/calculators';
+import { compareProducts, CURRENCIES, DEFAULT_CURRENCY } from '../../shared/calculators';
 import { colors, spacing, fontSize, borderRadius } from '../../shared/theme';
 import ProductCard from '../components/ProductCard';
 import UnitSelector from '../components/UnitSelector';
+import CurrencySelector from '../components/CurrencySelector';
 
 const createOption = (id: string, index: number, unit: string): ProductOption => ({
   id,
@@ -22,10 +23,13 @@ const createOption = (id: string, index: number, unit: string): ProductOption =>
 
 export default function HomeScreen() {
   const [unit, setUnit] = useState('ml');
+  const [currencyCode, setCurrencyCode] = useState(DEFAULT_CURRENCY.code);
   const [options, setOptions] = useState<ProductOption[]>([
     createOption('1', 0, 'ml'),
     createOption('2', 1, 'ml'),
   ]);
+
+  const currencySymbol = CURRENCIES.find(c => c.code === currencyCode)?.symbol ?? DEFAULT_CURRENCY.symbol;
 
   const results = compareProducts(options);
 
@@ -62,6 +66,11 @@ export default function HomeScreen() {
         <UnitSelector value={unit} onChange={handleUnitChange} />
       </View>
 
+      <View style={styles.unitRow}>
+        <Text style={styles.unitLabel}>Currency:</Text>
+        <CurrencySelector value={currencyCode} onChange={setCurrencyCode} />
+      </View>
+
       {options.map((option, index) => {
         const result = results.find(r => r.id === option.id);
         return (
@@ -73,6 +82,7 @@ export default function HomeScreen() {
             onRemove={handleRemove}
             canRemove={options.length > 2}
             index={index}
+            currencySymbol={currencySymbol}
           />
         );
       })}

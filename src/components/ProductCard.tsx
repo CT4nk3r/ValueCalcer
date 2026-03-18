@@ -17,16 +17,19 @@ interface Props {
   onRemove: (id: string) => void;
   canRemove: boolean;
   index: number;
+  currencySymbol: string;
 }
 
-export default function ProductCard({ option, result, onUpdate, onRemove, canRemove, index }: Props) {
+export default function ProductCard({ option, result, onUpdate, onRemove, canRemove, index, currencySymbol }: Props) {
   const isBest = result?.isBestValue ?? false;
+  const isTopBest = result?.isTopQuantityBestValue ?? false;
+  const isPlural = (result?.bestValueCount ?? 0) > 1;
 
   return (
-    <View style={[styles.card, isBest && styles.cardBest]}>
+    <View style={[styles.card, isBest && (isTopBest ? styles.cardBestTop : styles.cardBestSecondary)]}>
       {isBest && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>🏆 Best Value</Text>
+        <View style={[styles.badge, isTopBest ? styles.badgeTop : styles.badgeSecondary]}>
+          <Text style={styles.badgeText}>🏆 {isPlural ? 'Best Values' : 'Best Value'}</Text>
         </View>
       )}
       <View style={styles.row}>
@@ -49,7 +52,7 @@ export default function ProductCard({ option, result, onUpdate, onRemove, canRem
         />
       </View>
       <View style={styles.row}>
-        <Text style={styles.label}>Price (€)</Text>
+        <Text style={styles.label}>Price ({currencySymbol})</Text>
         <TextInput
           style={styles.input}
           value={option.price === 0 ? '' : String(option.price)}
@@ -60,7 +63,7 @@ export default function ProductCard({ option, result, onUpdate, onRemove, canRem
       </View>
       <View style={styles.resultRow}>
         <Text style={[styles.result, isBest && styles.resultBest]}>
-          {result ? formatPricePerUnit(result.pricePerBaseUnit, option.unit) : '—'}
+          {result ? formatPricePerUnit(result.pricePerBaseUnit, option.unit, currencySymbol) : '—'}
         </Text>
         {canRemove && (
           <TouchableOpacity onPress={() => onRemove(option.id)} style={styles.removeButton}>
@@ -86,15 +89,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  cardBest: { borderColor: colors.success, backgroundColor: colors.successLight },
+  cardBestTop: { borderColor: colors.successDark, backgroundColor: colors.successLight },
+  cardBestSecondary: { borderColor: colors.success, backgroundColor: colors.successLighter },
   badge: {
-    backgroundColor: colors.success,
     borderRadius: borderRadius.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     alignSelf: 'flex-start',
     marginBottom: spacing.sm,
   },
+  badgeTop: { backgroundColor: colors.successDark },
+  badgeSecondary: { backgroundColor: colors.success },
   badgeText: { color: colors.white, fontWeight: 'bold', fontSize: fontSize.sm },
   row: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   label: { width: 90, fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: '500' },
