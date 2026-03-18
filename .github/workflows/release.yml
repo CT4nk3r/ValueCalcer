@@ -93,6 +93,10 @@ jobs:
         working-directory: web
         run: npm run tauri:build
 
+      - name: Set artifact tag
+        shell: bash
+        run: echo "ARTIFACT_TAG=$(echo "${TAG}" | tr '/' '-')" >> "$GITHUB_ENV"
+
       - name: Collect Linux artifacts
         if: matrix.os == 'ubuntu-22.04'
         shell: bash
@@ -104,9 +108,9 @@ jobs:
           test -n "$DEB_FILE"
           test -n "$APPIMAGE_FILE"
           test -n "$RPM_FILE"
-          cp "$DEB_FILE" "dist/ValueCalcer-${TAG}-linux.deb"
-          cp "$APPIMAGE_FILE" "dist/ValueCalcer-${TAG}-linux.AppImage"
-          cp "$RPM_FILE" "dist/ValueCalcer-${TAG}-linux.rpm"
+          cp "$DEB_FILE" "dist/ValueCalcer-${ARTIFACT_TAG}-linux.deb"
+          cp "$APPIMAGE_FILE" "dist/ValueCalcer-${ARTIFACT_TAG}-linux.AppImage"
+          cp "$RPM_FILE" "dist/ValueCalcer-${ARTIFACT_TAG}-linux.rpm"
 
       - name: Collect Windows artifacts
         if: matrix.os == 'windows-latest'
@@ -121,8 +125,8 @@ jobs:
           if (-not $msiFile) { throw "MSI artifact not found." }
           if (-not $exeFile) { throw "EXE artifact not found." }
 
-          Copy-Item $msiFile.FullName "dist/ValueCalcer-$env:TAG-windows.msi"
-          Copy-Item $exeFile.FullName "dist/ValueCalcer-$env:TAG-windows.exe"
+          Copy-Item $msiFile.FullName "dist/ValueCalcer-$($env:ARTIFACT_TAG)-windows.msi"
+          Copy-Item $exeFile.FullName "dist/ValueCalcer-$($env:ARTIFACT_TAG)-windows.exe"
 
       - name: Collect macOS artifacts
         if: matrix.os == 'macos-latest'
@@ -131,7 +135,7 @@ jobs:
           mkdir -p dist
           DMG_FILE="$(find web/src-tauri/target/release/bundle -type f -name '*.dmg' | head -n 1)"
           test -n "$DMG_FILE"
-          cp "$DMG_FILE" "dist/ValueCalcer-${TAG}-macos.dmg"
+          cp "$DMG_FILE" "dist/ValueCalcer-${ARTIFACT_TAG}-macos.dmg"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -193,6 +197,10 @@ jobs:
             echo "No Android project detected (android/gradlew missing); skipping Android build."
           fi
 
+      - name: Set artifact tag
+        shell: bash
+        run: echo "ARTIFACT_TAG=$(echo "${TAG}" | tr '/' '-')" >> "$GITHUB_ENV"
+
       - name: Sign Android artifacts
         shell: bash
         run: |
@@ -216,7 +224,7 @@ jobs:
             --ks-key-alias "$KEY_ALIAS" \
             --ks-pass pass:"$KEYSTORE_PASSWORD" \
             --key-pass pass:"$KEY_PASSWORD" \
-            --out "dist/ValueCalcer-${TAG}-android.apk" \
+            --out "dist/ValueCalcer-${ARTIFACT_TAG}-android.apk" \
             dist/aligned.apk
 
           jarsigner \
@@ -225,7 +233,7 @@ jobs:
             -keypass "$KEY_PASSWORD" \
             "$UNSIGNED_AAB" "$KEY_ALIAS"
 
-          cp "$UNSIGNED_AAB" "dist/ValueCalcer-${TAG}-android.aab"
+          cp "$UNSIGNED_AAB" "dist/ValueCalcer-${ARTIFACT_TAG}-android.aab"
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
