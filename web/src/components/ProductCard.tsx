@@ -10,18 +10,27 @@ interface Props {
   onRemove: (id: string) => void;
   canRemove: boolean;
   index: number;
+  currencySymbol: string;
 }
 
-export default function ProductCard({ option, result, onUpdate, onRemove, canRemove, index }: Props) {
+export default function ProductCard({ option, result, onUpdate, onRemove, canRemove, index, currencySymbol }: Props) {
   const isBest = result?.isBestValue ?? false;
+  const isTopBest = result?.isTopQuantityBestValue ?? false;
+  const isPlural = (result?.bestValueCount ?? 0) > 1;
+
+  const cardClasses = isBest
+    ? isTopBest
+      ? 'border-emerald-500 bg-green-100'
+      : 'border-green-400 bg-green-50'
+    : 'border-gray-200 hover:border-blue-300';
 
   return (
-    <div className={`relative bg-white rounded-2xl shadow-sm border-2 p-6 transition-all duration-200 ${
-      isBest ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-blue-300'
-    }`}>
+    <div className={`relative bg-white rounded-2xl shadow-sm border-2 p-6 transition-all duration-200 ${cardClasses}`}>
       {isBest && (
-        <div className="absolute -top-3 left-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-          🏆 Best Value
+        <div className={`absolute -top-3 left-4 text-white text-xs font-bold px-3 py-1 rounded-full ${
+          isTopBest ? 'bg-emerald-600' : 'bg-green-500'
+        }`}>
+          🏆 {isPlural ? 'Best Values' : 'Best Value'}
         </div>
       )}
 
@@ -62,7 +71,7 @@ export default function ProductCard({ option, result, onUpdate, onRemove, canRem
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Price</label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">€</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">{currencySymbol}</span>
             <input
               type="number"
               value={option.price === 0 ? '' : option.price}
@@ -77,9 +86,11 @@ export default function ProductCard({ option, result, onUpdate, onRemove, canRem
       </div>
 
       <div className={`text-center py-3 rounded-xl font-bold text-lg ${
-        isBest ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700'
+        isBest
+          ? isTopBest ? 'bg-emerald-600 text-white' : 'bg-green-400 text-white'
+          : 'bg-gray-100 text-gray-700'
       }`}>
-        {result ? formatPricePerUnit(result.pricePerBaseUnit, option.unit) : '—'}
+        {result ? formatPricePerUnit(result.pricePerBaseUnit, option.unit, currencySymbol) : '—'}
       </div>
     </div>
   );

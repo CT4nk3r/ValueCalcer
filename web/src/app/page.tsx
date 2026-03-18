@@ -2,9 +2,10 @@
 
 import { useState, useCallback } from 'react';
 import { ProductOption } from '../../../shared/types';
-import { compareProducts } from '../../../shared/calculators';
+import { compareProducts, CURRENCIES, DEFAULT_CURRENCY } from '../../../shared/calculators';
 import ProductCard from '../components/ProductCard';
 import UnitSelector from '../components/UnitSelector';
+import CurrencySelector from '../components/CurrencySelector';
 import AddButton from '../components/AddButton';
 
 const createOption = (id: string, index: number, unit: string): ProductOption => ({
@@ -17,10 +18,13 @@ const createOption = (id: string, index: number, unit: string): ProductOption =>
 
 export default function Home() {
   const [unit, setUnit] = useState('ml');
+  const [currencyCode, setCurrencyCode] = useState(DEFAULT_CURRENCY.code);
   const [options, setOptions] = useState<ProductOption[]>([
     createOption('1', 0, 'ml'),
     createOption('2', 1, 'ml'),
   ]);
+
+  const currencySymbol = CURRENCIES.find(c => c.code === currencyCode)?.symbol ?? DEFAULT_CURRENCY.symbol;
 
   const results = compareProducts(options);
 
@@ -56,8 +60,16 @@ export default function Home() {
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Unit Selector */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-6">
-          <label htmlFor="unit-selector" className="block text-sm font-semibold text-gray-600 mb-2">Compare by unit:</label>
-          <UnitSelector id="unit-selector" value={unit} onChange={handleUnitChange} />
+          <div className="flex flex-wrap items-center gap-4">
+            <div>
+              <label htmlFor="unit-selector" className="block text-sm font-semibold text-gray-600 mb-2">Compare by unit:</label>
+              <UnitSelector id="unit-selector" value={unit} onChange={handleUnitChange} />
+            </div>
+            <div>
+              <label htmlFor="currency-selector" className="block text-sm font-semibold text-gray-600 mb-2">Currency:</label>
+              <CurrencySelector id="currency-selector" value={currencyCode} onChange={setCurrencyCode} />
+            </div>
+          </div>
         </div>
 
         {/* Product Cards Grid */}
@@ -73,6 +85,7 @@ export default function Home() {
                 onRemove={handleRemove}
                 canRemove={options.length > 2}
                 index={index}
+                currencySymbol={currencySymbol}
               />
             );
           })}
