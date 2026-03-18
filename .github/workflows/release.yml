@@ -95,7 +95,7 @@ jobs:
 
       - name: Set artifact tag
         shell: bash
-        run: echo "ARTIFACT_TAG=$(echo "${TAG}" | tr '/' '-')" >> "$GITHUB_ENV"
+        run: echo "ARTIFACT_TAG=${TAG//\//-}" >> "$GITHUB_ENV"
 
       - name: Collect Linux artifacts
         if: matrix.os == 'ubuntu-22.04'
