@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  ...(process.env.VERCEL ? {} : { output: 'export' }),
 };
 
 module.exports = nextConfig;
