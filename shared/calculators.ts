@@ -1,4 +1,21 @@
-import { ProductOption, ComparisonResult, Unit } from './types';
+import { ProductOption, ComparisonResult, Unit, Currency } from './types';
+
+export const CURRENCIES: Currency[] = [
+  { code: 'EUR', symbol: '€', label: 'Euro (€)' },
+  { code: 'USD', symbol: '$', label: 'US Dollar ($)' },
+  { code: 'GBP', symbol: '£', label: 'British Pound (£)' },
+  { code: 'JPY', symbol: '¥', label: 'Japanese Yen (¥)' },
+  { code: 'CHF', symbol: 'CHF', label: 'Swiss Franc (CHF)' },
+  { code: 'PLN', symbol: 'zł', label: 'Polish Złoty (zł)' },
+  { code: 'SEK', symbol: 'kr', label: 'Swedish Krona (kr)' },
+  { code: 'HUF', symbol: 'Ft', label: 'Hungarian Forint (Ft)' },
+  { code: 'CZK', symbol: 'Kč', label: 'Czech Koruna (Kč)' },
+  { code: 'INR', symbol: '₹', label: 'Indian Rupee (₹)' },
+  { code: 'BRL', symbol: 'R$', label: 'Brazilian Real (R$)' },
+  { code: 'TRY', symbol: '₺', label: 'Turkish Lira (₺)' },
+];
+
+export const DEFAULT_CURRENCY = CURRENCIES[0];
 
 export const UNITS: Unit[] = [
   { label: 'ml', value: 'ml', type: 'volume', toBaseMultiplier: 1 },
@@ -26,18 +43,39 @@ export function calculatePricePerUnit(option: ProductOption): number {
 }
 
 export function compareProducts(options: ProductOption[]): ComparisonResult[] {
-  const results = options.map(opt => ({
+  const results: ComparisonResult[] = options.map(opt => ({
     id: opt.id,
     pricePerBaseUnit: calculatePricePerUnit(opt),
     isBestValue: false,
+    bestValueCount: 0,
+    isTopQuantityBestValue: false,
   }));
 
   const validResults = results.filter(r => isFinite(r.pricePerBaseUnit));
   if (validResults.length > 0) {
     const minPrice = Math.min(...validResults.map(r => r.pricePerBaseUnit));
-    results.forEach(r => {
-      r.isBestValue = isFinite(r.pricePerBaseUnit) && r.pricePerBaseUnit === minPrice;
+    const bestResults = results.filter(r => isFinite(r.pricePerBaseUnit) && r.pricePerBaseUnit === minPrice);
+    const bestCount = bestResults.length;
+
+    bestResults.forEach(r => {
+      r.isBestValue = true;
+      r.bestValueCount = bestCount;
     });
+
+    if (bestCount > 1) {
+      const maxEffectiveSize = Math.max(
+        ...bestResults.map(r => {
+          const opt = options.find(o => o.id === r.id)!;
+          return getEffectiveSize(opt.size, opt.unit);
+        }),
+      );
+      bestResults.forEach(r => {
+        const opt = options.find(o => o.id === r.id)!;
+        r.isTopQuantityBestValue = getEffectiveSize(opt.size, opt.unit) === maxEffectiveSize;
+      });
+    } else {
+      bestResults[0].isTopQuantityBestValue = true;
+    }
   }
 
   return results;
@@ -65,8 +103,8 @@ function getBaseUnitLabel(unitValue: string): string {
   }
 }
 
-export function formatPricePerUnit(pricePerUnit: number, unitValue: string): string {
+export function formatPricePerUnit(pricePerUnit: number, unitValue: string, currencySymbol: string = '€'): string {
   if (!isFinite(pricePerUnit)) return '—';
   const baseLabel = getBaseUnitLabel(unitValue);
-  return `€${pricePerUnit.toFixed(4)} / ${baseLabel}`;
+  return `${currencySymbol}${pricePerUnit.toFixed(4)} / ${baseLabel}`;
 }

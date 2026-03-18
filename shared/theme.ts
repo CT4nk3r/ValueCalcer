@@ -5,7 +5,9 @@ export const colors = {
   text: '#111827',
   textSecondary: '#6B7280',
   success: '#10B981',
+  successDark: '#059669',
   successLight: '#D1FAE5',
+  successLighter: '#ECFDF5',
   border: '#E5E7EB',
   white: '#FFFFFF',
   error: '#EF4444',
@@ -53,7 +55,9 @@ export function injectCSSVariables(): void {
   root.style.setProperty('--color-text', colors.text);
   root.style.setProperty('--color-text-secondary', colors.textSecondary);
   root.style.setProperty('--color-success', colors.success);
+  root.style.setProperty('--color-success-dark', colors.successDark);
   root.style.setProperty('--color-success-light', colors.successLight);
+  root.style.setProperty('--color-success-lighter', colors.successLighter);
   root.style.setProperty('--color-border', colors.border);
   root.style.setProperty('--color-error', colors.error);
 }

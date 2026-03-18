@@ -7,6 +7,12 @@ export interface Unit {
   toBaseMultiplier: number;
 }
 
+export interface Currency {
+  code: string;
+  symbol: string;
+  label: string;
+}
+
 export interface ProductOption {
   id: string;
   name: string;
@@ -19,4 +25,6 @@ export interface ComparisonResult {
   id: string;
   pricePerBaseUnit: number;
   isBestValue: boolean;
+  bestValueCount: number;
+  isTopQuantityBestValue: boolean;
 }
